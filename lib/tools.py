@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# Version 1.0.0 (27/12/2013)
-# NeverWise XBMC tools
+# Version 1.0.1 (27/12/2013)
+# NeverWise XBMC toolkit
 # Strumenti per i plugins di xbmc.
 # By NeverWise
 # <email>
@@ -19,29 +19,46 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #######################################################################
-import re, sys, urllib, urllib2, urlparse, xbmcplugin, xbmcgui, xbmcaddon, CommonFunctions
+import re, sys, urllib, urllib2, urlparse, xbmcplugin, xbmcgui, xbmcaddon, BeautifulSoup, CommonFunctions
 
 
 def getTranslation(addonId, translationId):
   return xbmcaddon.Addon(addonId).getLocalizedString(translationId).encode('utf-8')
 
 
+def getBSResponseUrl(url):
+  result = getResponseUrl(url)
+  if result != None:
+    result = BeautifulSoup.BeautifulSoup(result)
+  return result
+
+
 def getResponseUrl(url):
-  req = urllib2.Request(url)
-  req.add_header('User-Agent', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:26.0) Gecko/20100101 Firefox/26.0')
-  response = urllib2.urlopen(req)
-  html = response.read()
-  response.close()
-  html = html.replace('\t', '').replace('\r\n', '').replace('\n', '').replace('\r', '').replace('" />', '"/>')
-  while html.find('  ') > -1: html = html.replace('  ', ' ')
+  html = None
+  req = urllib2.Request(url, headers = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:27.0) Gecko/20100101 Firefox/27.0' })
+
+  try:
+    response = urllib2.urlopen(req)
+  except:
+    xbmcgui.Dialog().ok('NeverWise toolkit', getTranslation('script.neverwise', 30001))
+  else:
+    html = response.read()
+    response.close()
+
+  if html != None:
+    html = html.replace('\t', '').replace('\r\n', '').replace('\n', '').replace('\r', '').replace('" />', '"/>')
+    while html.find('  ') > -1: html = html.replace('  ', ' ')
+
   return html
 
 
 def normalizeText(text):
-  text = text.strip().decode('utf8', 'xmlcharrefreplace')
-  return CommonFunctions.replaceHTMLCodes(text)
+  text = text.decode('utf8', 'xmlcharrefreplace')
+  return CommonFunctions.replaceHTMLCodes(text).strip()
+
 
 def stripTags(html): return re.sub('<.+?>', '', html)
+
 
 # Convert parameters encoded in a URL to a dict.
 def urlParametersToDict(parameters):

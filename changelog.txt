@@ -1,2 +1,7 @@
+[B]Version 1.0.1[/B]
+- Added the BeautifulSoup library.
+- Added error message on the Internet connection.
+- Improved some functions.
+
 [B]Version 1.0.0[/B]
 - Initial version.
