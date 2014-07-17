@@ -1,3 +1,6 @@
+[B]Version 1.0.2[/B]
+- Changed structure with the Util class.
+
 [B]Version 1.0.1[/B]
 - Added the BeautifulSoup library.
 - Added error message on the Internet connection.
