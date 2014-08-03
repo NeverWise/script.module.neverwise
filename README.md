@@ -1,4 +1,4 @@
-script.neverwise
+script.module.neverwise
 ================
 
 NeverWise XBMC toolkit (tested on XBMC 13.1 Gotham)

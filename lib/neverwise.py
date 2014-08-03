@@ -2,66 +2,62 @@
 # -*- coding: utf-8 -*-
 import re, sys, urllib, urllib2, urlparse, chardet, xbmcplugin, xbmcgui, xbmcaddon, BeautifulSoup, CommonFunctions
 
-class Util:
+class Util(object):
 
-  __html = __BShtml = None
-  __idPlugin = 'script.neverwise'
-  __streamVideo = 'video'
+  _html = _BShtml = None
+  _idPlugin = 'script.module.neverwise'
+  _addonName = xbmcaddon.Addon().getAddonInfo('name')
 
 
   def __init__(self, url):
-    self.__responseError = False
+    self._responseError = False
     req = urllib2.Request(url, headers = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0' })
 
     try:
       response = urllib2.urlopen(req)
     except:
-      self.__responseError = True
+      self._responseError = True
     else:
-      self.__html = response.read()
+      self._html = response.read()
       response.close()
+      if self._html.find(b'\0') > -1: # null bytes, if there's, the response is wrong.
+        self._responseError = True
+        self._html = None
 
-    if self.__html != None:
-      self.__html = self.__html.replace('\t', '').replace('\r\n', '').replace('\n', '').replace('\r', '').replace('" />', '"/>')
-      while self.__html.find('  ') > -1: self.__html = self.__html.replace('  ', ' ')
-
-
-  def hasErrors(self):
-    return self.__responseError
-
-
-  def getBSHtml(self):
-    if self.__BShtml == None and self.__html != None:
-      self.__BShtml = BeautifulSoup.BeautifulSoup(self.__html)
-    return self.__BShtml
+    if self._html != None:
+      self._html = self._html.replace('\t', '').replace('\r\n', '').replace('\n', '').replace('\r', '').replace('" />', '"/>')
+      while self._html.find('  ') > -1: self._html = self._html.replace('  ', ' ')
 
 
-  def getBSHtmlDialog(self, dialogTitle):
-    self.__showErrorDialog(dialogTitle)
-    return self.getBSHtml()
+  def getBSHtml(self, showErrorDialog = False):
+    self._showErrorDialog(showErrorDialog)
+    if self._BShtml == None and self._html != None:
+      self._BShtml = BeautifulSoup.BeautifulSoup(self._html)
+    return self._BShtml
 
 
-  def getHtml(self):
-    return self.__html
+  def getHtml(self, showErrorDialog = False):
+    self._showErrorDialog(showErrorDialog)
+    return self._html
 
 
-  def getHtmlDialog(self, dialogTitle):
-    self.__showErrorDialog(dialogTitle)
-    return self.getHtml()
-
-
-  def __showErrorDialog(self, dialogTitle):
-    if self.__responseError:
-      Util.showConnectionErrorDialog(dialogTitle)
+  def _showErrorDialog(self, showErrorDialog = False):
+    if showErrorDialog and self._responseError:
+      Util.showConnectionErrorDialog()
 
 
   @staticmethod
-  def showConnectionErrorDialog(dialogTitle):
-    xbmcgui.Dialog().ok(dialogTitle, Util.getTranslation(Util.__idPlugin, 30001))
+  def showConnectionErrorDialog():
+    xbmcgui.Dialog().ok(Util._addonName, Util.getTranslation(33001, Util._idPlugin))
 
 
   @staticmethod
-  def getTranslation(addonId, translationId):
+  def showVideoNotAvailableDialog():
+    xbmcgui.Dialog().ok(Util._addonName, Util.getTranslation(33002, Util._idPlugin))
+
+
+  @staticmethod
+  def getTranslation(translationId, addonId = ''):
     return xbmcaddon.Addon(addonId).getLocalizedString(translationId).encode('utf-8')
 
 
@@ -91,24 +87,55 @@ class Util:
 
 
   @staticmethod
-  def createListItem(name, thumbimage, fanart, streamtype, infolabels):
-    li = xbmcgui.ListItem(name, iconImage = 'DefaultFolder.png', thumbnailImage = thumbimage)
-    li.setProperty('fanart_image', fanart)
-    li.setInfo(streamtype, infolabels)
+  def createListItem(label, label2 = '', iconImage = None, thumbnailImage = None, path = None, fanart = None, streamtype = None, infolabels = None, duration = '', isPlayable = False):
+    li = xbmcgui.ListItem(label, label2)
+
+    if iconImage:
+      li.setIconImage(iconImage)
+
+    if thumbnailImage:
+      li.setThumbnailImage(thumbnailImage)
+
+    if path:
+      li.setPath(path)
+
+    if fanart:
+      li.setProperty('fanart_image', fanart)
+
+    if streamtype:
+      li.setInfo(streamtype, infolabels)
+
+    if streamtype == 'video' and duration:
+      li.addStreamInfo(streamtype, {'duration': duration})
+
+    if isPlayable:
+      li.setProperty('IsPlayable', 'true')
+
     return li
 
 
   @staticmethod
-  def addItem(handle, name, thumbimage, fanart, streamtype, infolabels, duration, url, isFolder):
-    li = Util.createListItem(name, thumbimage, fanart, streamtype, infolabels)
-    if isFolder:
-      url = '{0}?{1}'.format(sys.argv[0], urllib.urlencode(url))
-    if streamtype == Util.__streamVideo and duration != None:
-      li.addStreamInfo(streamtype, {'duration': duration})
-    return xbmcplugin.addDirectoryItem(handle = handle, url = url, listitem = li, isFolder = isFolder)
+  def addItems(handle, items):
+    if len(items) > 0:
+      listItems = []
+      for url, listitem, isFolder, urlIsParams in items:
+        if urlIsParams:
+          url = '{0}?{1}'.format(sys.argv[0], urllib.urlencode(url))
+        listItems.append([url, listitem, isFolder])
+
+      xbmcplugin.addDirectoryItems(handle, listItems)
+      xbmcplugin.endOfDirectory(handle)
+    else:
+      xbmcgui.Dialog().ok(Util._addonName, Util.getTranslation(33003, Util._idPlugin))
 
 
   @staticmethod
-  def AddItemPage(handle, pageNum, thumbimage, fanart, infolabels, params):
-    title = '{0} {1} >'.format(Util.getTranslation(Util.__idPlugin, 30002), pageNum)
-    Util.addItem(handle, title, thumbimage, fanart, Util.__streamVideo, infolabels, None, params, True)
+  def createItemPage(pageNum):
+    title = '{0} {1} >'.format(Util.getTranslation(33000, Util._idPlugin), pageNum)
+    return Util.createListItem(title)
+
+
+  @staticmethod
+  def playStream(handle, label, thumbnailImage = None, path = None, streamtype = None, infolabels = None):
+    li = Util.createListItem(label, thumbnailImage = thumbnailImage, path = path, streamtype = streamtype, infolabels = infolabels)
+    xbmcplugin.setResolvedUrl(handle, True, li)

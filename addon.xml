@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="script.neverwise" name="NeverWise XBMC toolkit" version="1.0.2" provider-name="NeverWise">
+<addon id="script.module.neverwise" name="NeverWise XBMC toolkit" version="1.0.3" provider-name="NeverWise">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
     <import addon="script.module.parsedom" version="2.5.2"/>
@@ -18,6 +18,6 @@
     <forum></forum>
     <website></website>
     <email></email>
-    <source>https://github.com/NeverWise/script.neverwise</source>
+    <source>https://github.com/NeverWise/script.module.neverwise</source>
    </extension>
 </addon>
