@@ -1,49 +1,43 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
-import re, sys, urllib, urllib2, urlparse, chardet, xbmcplugin, xbmcgui, xbmcaddon, BeautifulSoup, CommonFunctions
+import re, sys, urllib, urllib2, urlparse, xbmcplugin, xbmcgui, xbmcaddon, BeautifulSoup, CommonFunctions, gzip, StringIO
 
 class Util(object):
 
-  _html = _BShtml = None
   _idPlugin = 'script.module.neverwise'
   _addonName = xbmcaddon.Addon().getAddonInfo('name')
 
 
-  def __init__(self, url):
-    self._responseError = False
-    req = urllib2.Request(url, headers = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0' })
+  @staticmethod
+  def getHtml(url, showErrorDialog = False):
+    bsHtml = None
+    req = urllib2.Request(url, headers = { 'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:34.0) Gecko/20100101 Firefox/34.0' })
+    req.add_header('Accept-Encoding', 'gzip, deflate')
 
     try:
       response = urllib2.urlopen(req)
     except:
-      self._responseError = True
+      bsHtml = None
     else:
-      self._html = response.read()
+      bsHtml = response.read()
+      ce = response.info().get('Content-Encoding')
+      if ce == 'gzip':
+        bsHtml = gzip.GzipFile(fileobj = StringIO.StringIO(bsHtml)).read()
+      elif ce == 'deflate':
+        bsHtml = zlib.decompress(bsHtml)
+
       response.close()
-      if self._html.find(b'\0') > -1: # null bytes, if there's, the response is wrong.
-        self._responseError = True
-        self._html = None
 
-    if self._html != None:
-      self._html = self._html.replace('\t', '').replace('\r\n', '').replace('\n', '').replace('\r', '').replace('" />', '"/>')
-      while self._html.find('  ') > -1: self._html = self._html.replace('  ', ' ')
+      if bsHtml.find(b'\0') > -1: # null bytes, if there's, the response is wrong.
+        bsHtml = None
 
-
-  def getBSHtml(self, showErrorDialog = False):
-    self._showErrorDialog(showErrorDialog)
-    if self._BShtml == None and self._html != None:
-      self._BShtml = BeautifulSoup.BeautifulSoup(self._html)
-    return self._BShtml
-
-
-  def getHtml(self, showErrorDialog = False):
-    self._showErrorDialog(showErrorDialog)
-    return self._html
-
-
-  def _showErrorDialog(self, showErrorDialog = False):
-    if showErrorDialog and self._responseError:
+    if bsHtml != None:
+      bsHtml = bsHtml.replace('\t', '').replace('\r\n', '').replace('\n', '').replace('\r', '').replace('" />', '"/>')
+      while bsHtml.find('  ') > -1: bsHtml = bsHtml.replace('  ', ' ')
+      bsHtml = BeautifulSoup.BeautifulSoup(bsHtml)
+    elif showErrorDialog:
       Util.showConnectionErrorDialog()
+
+    return bsHtml
 
 
   @staticmethod
@@ -63,19 +57,16 @@ class Util(object):
 
   @staticmethod
   def normalizeText(text):
-    try:
-      newText = text.decode('utf8', 'xmlcharrefreplace')
-    except:
-      newText = ''
-      for char in text:
-        cType = chardet.detect(char)
-        if cType['encoding'] == 'ascii' or cType['encoding'] == 'utf8' or cType['encoding'] == 'utf-8':
-          newText += char
-    return CommonFunctions.replaceHTMLCodes(newText).strip()
+    if isinstance(text, str):
+      text = text.decode('utf-8')
+    return CommonFunctions.replaceHTMLCodes(text).strip()
 
 
   @staticmethod
-  def trimTags(html): return re.sub('<.+?>', '', html)
+  def trimTags(html):
+    html = re.sub('<script.+?>.+?</script>', '', html)
+    html = re.sub('<script>.+?</script>', '', html)
+    return re.sub('<.+?>', '', html)
 
 
   # Convert parameters encoded in a URL to a dict.
@@ -115,18 +106,8 @@ class Util(object):
 
 
   @staticmethod
-  def addItems(handle, items):
-    if len(items) > 0:
-      listItems = []
-      for url, listitem, isFolder, urlIsParams in items:
-        if urlIsParams:
-          url = '{0}?{1}'.format(sys.argv[0], urllib.urlencode(url))
-        listItems.append([url, listitem, isFolder])
-
-      xbmcplugin.addDirectoryItems(handle, listItems)
-      xbmcplugin.endOfDirectory(handle)
-    else:
-      xbmcgui.Dialog().ok(Util._addonName, Util.getTranslation(33003, Util._idPlugin))
+  def formatUrl(parameters):
+    return '{0}?{1}'.format(sys.argv[0], urllib.urlencode(parameters))
 
 
   @staticmethod
