@@ -1,3 +1,6 @@
+[B]Version 1.0.9[/B]
+- Added htmlDecode function
+
 [B]Version 1.0.8[/B]
 - Improved the getResponse functions.
 - Added showNotification function to replace dialog boxes with notifications.

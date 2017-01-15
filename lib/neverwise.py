@@ -37,7 +37,7 @@ def getResponseForRegEx(url, headers = {}):
   result = getResponse(url, headers)
 
   if result.isSucceeded:
-    result.body = HTMLParser.HTMLParser().unescape(result.body)
+    result.body = htmlDecode(result.body)
     result.body = normalizeResponse(result.body)
 
   return result
@@ -173,9 +173,18 @@ def playStream(handle, label, thumbnailImage = None, path = None, streamtype = N
   li = createListItem(label, thumbnailImage = thumbnailImage, path = path, streamtype = streamtype, infolabels = infolabels)
   xbmcplugin.setResolvedUrl(handle, True, li)
 
+
 def stripTags(text):
   text = re.sub('<[^<]+?>', '', text)
   return text.strip()
+
+
+def htmlDecode(text):
+  try:
+    text = text.decode('utf-8')
+  except:
+    pass
+  return HTMLParser.HTMLParser().unescape(text)
 
 
 class Response(object):
