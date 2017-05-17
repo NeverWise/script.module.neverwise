@@ -1,3 +1,7 @@
+[B]Version 1.1.1[/B]
+- Fixed bug on timezone.
+- Modified dependency.
+
 [B]Version 1.1.0[/B]
 - Updated BeautifulSoup to version 4.
 - Added management of: cookies, datetime format, timezone and context menu.

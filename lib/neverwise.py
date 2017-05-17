@@ -227,11 +227,19 @@ def gettz(name):
 
 
 def gettzlocal():
+  result = None
+
   tzKodi = json.loads(xbmc.executeJSONRPC('{"jsonrpc": "2.0", "method": "Settings.GetSettingValue", "params": {"setting": "locale.timezone"}, "id": 1}'))
   if not 'error' in tzKodi:
-    return tz.gettz(tzKodi['result']['value'])
-  else:
-    return tz.tzlocal()
+    result = tz.gettz(tzKodi['result']['value'])
+
+  if result == None:
+    result = tz.tzlocal()
+
+  if result == None:
+    result = tz.tzutc()
+
+  return result
 
 
 class Response(object):
