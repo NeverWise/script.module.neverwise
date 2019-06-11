@@ -1,10 +1,31 @@
 #!/usr/bin/python
-import cookielib, datetime, gzip, HTMLParser, json, os, re, StringIO, sys, urllib, urllib2, urlparse, xbmc, xbmcaddon, xbmcgui, xbmcplugin
+import datetime, gzip, json, os, re, sys, urllib, xbmc, xbmcaddon, xbmcgui, xbmcplugin
+try:
+  from http import cookiejar as cookielib
+except ImportError:
+  import cookielib
+try:
+  from html.parser import HTMLParser
+except ImportError:
+  import HTMLParser
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import BytesIO as StringIO
+try:
+  import urllib.request as urllib2
+except ImportError:
+  import urllib2
+try:
+  import urllib.parse as urlparse
+except ImportError:
+  import urlparse
+  
 import time # Workaround bug.
 from bs4 import BeautifulSoup
 from dateutil import tz
 
-_idPlugin = 'script.module.neverwise'
+_idPlugin = 'script module.neverwise'
 addon = xbmcaddon.Addon()
 addonName = addon.getAddonInfo('name')
 icon_path = os.path.join(addon.getAddonInfo('path'), 'icon.png')
@@ -60,9 +81,14 @@ def getResponse(url, headers = {}, show_error_msg = True):
     'Accept-Encoding' : 'gzip, deflate'
   }
 
-  for key, value in defaultHeaders.iteritems():
-    if key not in headers:
-      headers[key] = value
+  try:
+    for key, value in defaultHeaders.iteritems():
+      if key not in headers:
+        headers[key] = value
+  except:
+    for key,value in defaultHeaders.items():
+      if key not in headers:
+        headers[key] = value
 
   cookies = cookielib.CookieJar()
   opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies))
@@ -82,20 +108,28 @@ def getResponse(url, headers = {}, show_error_msg = True):
     result.body = response.read()
     encoding = response.info().get('Content-Encoding')
     if encoding == 'gzip':
-      result.body = gzip.GzipFile(fileobj = StringIO.StringIO(result.body)).read()
+      result.body = gzip.GzipFile(fileobj = StringIO(result.body)).read()
     elif encoding == 'deflate':
       result.body = zlib.decompress(result.body)
 
-    charset = response.headers.getparam('charset')
-    if charset != None:
-      result.body = result.body.decode(charset)
+    try:
+      charset = response.headers.getparam('charset')
+      if charset != None:
+        result.body = result.body.decode(charset)
+    except:
+      charset = response.headers.get_content_charset()
+      if charset != None:
+        result.body = result.body.decode(charset)
 
     response.close()
 
+    '''
+    # will be handled in a different way to handle both python 2 and 3
     if result.body.find(b'\0') > -1: # null bytes, if there's, the response is wrong.
       result.isSucceeded = False
       if show_error_msg:
         showResponseError()
+    '''
 
   return result
 
