@@ -25,7 +25,7 @@ import time # Workaround bug.
 from bs4 import BeautifulSoup
 from dateutil import tz
 
-_idPlugin = 'script module.neverwise'
+_idPlugin = 'script.module.neverwise'
 addon = xbmcaddon.Addon()
 addonName = addon.getAddonInfo('name')
 icon_path = os.path.join(addon.getAddonInfo('path'), 'icon.png')
@@ -198,7 +198,11 @@ def createListItem(label, label2 = '', iconImage = None, thumbnailImage = None, 
 
 
 def formatUrl(parameters, domain = sys.argv[0]):
-  return '{0}?{1}'.format(domain, urllib.urlencode(encodeDict(parameters)))
+  try:
+    return '{0}?{1}'.format(domain, urllib.urlencode(encodeDict(parameters)))
+  except:
+    return '{0}?{1}'.format(domain, urllib.parse.urlencode(encodeDict(parameters)))
+
 
 
 def createNextPageItem(handle, pageNum, urlDictParams, fanart = None):
@@ -213,13 +217,22 @@ def createAudioVideoItems(handle, fanart = None):
 
 def encodeDict(oldDict):
   newDict = {}
-  for k, v in oldDict.iteritems():
-    if isinstance(v, unicode):
-      v = v.encode('utf8')
-    elif isinstance(v, str):
-      # Must be encoded in UTF-8
-      v.decode('utf8')
-    newDict[k] = v
+  try:
+    for k, v in oldDict.iteritems():
+      if isinstance(v, unicode):
+        v = v.encode('utf8')
+      elif isinstance(v, str):
+        # Must be encoded in UTF-8
+        v.decode('utf8')
+      newDict[k] = v
+  except:
+    for k, v in oldDict.items():
+      if isinstance(v, str):
+        v = v.encode('utf8')
+      elif isinstance(v, str):
+        # Must be encoded in UTF-8
+        v.decode('utf8')
+      newDict[k] = v
   return newDict
 
 
