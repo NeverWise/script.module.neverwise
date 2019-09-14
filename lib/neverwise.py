@@ -1,24 +1,24 @@
 #!/usr/bin/python
 import datetime, gzip, json, os, re, sys, urllib, xbmc, xbmcaddon, xbmcgui, xbmcplugin
-try:
+try: # For python 3.x
   from http import cookiejar as cookielib
-except ImportError:
+except ImportError: # For python 2.x
   import cookielib
-try:
+try: # For python 3.x
   from html.parser import HTMLParser
-except ImportError:
+except ImportError: # For python 2.x
   import HTMLParser
-try:
+try: # For python 2.x
   from StringIO import StringIO
-except ImportError:
+except ImportError: # For python 3.x
   from io import BytesIO as StringIO
-try:
+try: # For python 3.x
   import urllib.request as urllib2
-except ImportError:
+except ImportError: # For python 2.x
   import urllib2
-try:
+try: # For python 3.x
   import urllib.parse as urlparse
-except ImportError:
+except ImportError: # For python 2.x
   import urlparse
   
 import time # Workaround bug.
@@ -77,15 +77,15 @@ def getResponseForRegEx(url, headers = {}, show_error_msg = True):
 def getResponse(url, headers = {}, show_error_msg = True):
 
   defaultHeaders = {
-    'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/53.0',
+    'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/69.0',
     'Accept-Encoding' : 'gzip, deflate'
   }
 
-  try:
+  try: # For python 2.x
     for key, value in defaultHeaders.iteritems():
       if key not in headers:
         headers[key] = value
-  except:
+  except: # For python 3.x
     for key,value in defaultHeaders.items():
       if key not in headers:
         headers[key] = value
@@ -112,11 +112,11 @@ def getResponse(url, headers = {}, show_error_msg = True):
     elif encoding == 'deflate':
       result.body = zlib.decompress(result.body)
 
-    try:
+    try: # For python 2.x
       charset = response.headers.getparam('charset')
       if charset != None:
         result.body = result.body.decode(charset)
-    except:
+    except: # For python 3.x
       charset = response.headers.get_content_charset()
       if charset != None:
         result.body = result.body.decode(charset)
@@ -125,6 +125,7 @@ def getResponse(url, headers = {}, show_error_msg = True):
 
     '''
     # will be handled in a different way to handle both python 2 and 3
+    # Is it not enough changing "b'\0'" to "b'\x00'"?
     if result.body.find(b'\0') > -1: # null bytes, if there's, the response is wrong.
       result.isSucceeded = False
       if show_error_msg:
@@ -198,9 +199,9 @@ def createListItem(label, label2 = '', iconImage = None, thumbnailImage = None, 
 
 
 def formatUrl(parameters, domain = sys.argv[0]):
-  try:
+  try: # For python 2.x
     return '{0}?{1}'.format(domain, urllib.urlencode(encodeDict(parameters)))
-  except:
+  except: # For python 3.x
     return '{0}?{1}'.format(domain, urllib.parse.urlencode(encodeDict(parameters)))
 
 
@@ -217,7 +218,7 @@ def createAudioVideoItems(handle, fanart = None):
 
 def encodeDict(oldDict):
   newDict = {}
-  try:
+  try: # For python 2.x
     for k, v in oldDict.iteritems():
       if isinstance(v, unicode):
         v = v.encode('utf8')
@@ -225,13 +226,8 @@ def encodeDict(oldDict):
         # Must be encoded in UTF-8
         v.decode('utf8')
       newDict[k] = v
-  except:
+  except: # For python 3.x
     for k, v in oldDict.items():
-      if isinstance(v, str):
-        v = v.encode('utf8')
-      elif isinstance(v, str):
-        # Must be encoded in UTF-8
-        v.decode('utf8')
       newDict[k] = v
   return newDict
 
