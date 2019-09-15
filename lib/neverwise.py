@@ -1,5 +1,26 @@
 #!/usr/bin/python
-import cookielib, datetime, gzip, HTMLParser, json, os, re, StringIO, sys, urllib, urllib2, urlparse, xbmc, xbmcaddon, xbmcgui, xbmcplugin
+import datetime, gzip, json, os, re, sys, urllib, xbmc, xbmcaddon, xbmcgui, xbmcplugin
+try: # For python 3.x
+  from http import cookiejar as cookielib
+except ImportError: # For python 2.x
+  import cookielib
+try: # For python 3.x
+  from html.parser import HTMLParser
+except ImportError: # For python 2.x
+  import HTMLParser
+try: # For python 2.x
+  from StringIO import StringIO
+except ImportError: # For python 3.x
+  from io import BytesIO as StringIO
+try: # For python 3.x
+  import urllib.request as urllib2
+except ImportError: # For python 2.x
+  import urllib2
+try: # For python 3.x
+  import urllib.parse as urlparse
+except ImportError: # For python 2.x
+  import urlparse
+  
 import time # Workaround bug.
 from bs4 import BeautifulSoup
 from dateutil import tz
@@ -56,13 +77,18 @@ def getResponseForRegEx(url, headers = {}, show_error_msg = True):
 def getResponse(url, headers = {}, show_error_msg = True):
 
   defaultHeaders = {
-    'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/53.0',
+    'User-Agent' : 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/69.0',
     'Accept-Encoding' : 'gzip, deflate'
   }
 
-  for key, value in defaultHeaders.iteritems():
-    if key not in headers:
-      headers[key] = value
+  try: # For python 2.x
+    for key, value in defaultHeaders.iteritems():
+      if key not in headers:
+        headers[key] = value
+  except: # For python 3.x
+    for key,value in defaultHeaders.items():
+      if key not in headers:
+        headers[key] = value
 
   cookies = cookielib.CookieJar()
   opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cookies))
@@ -82,20 +108,29 @@ def getResponse(url, headers = {}, show_error_msg = True):
     result.body = response.read()
     encoding = response.info().get('Content-Encoding')
     if encoding == 'gzip':
-      result.body = gzip.GzipFile(fileobj = StringIO.StringIO(result.body)).read()
+      result.body = gzip.GzipFile(fileobj = StringIO(result.body)).read()
     elif encoding == 'deflate':
       result.body = zlib.decompress(result.body)
 
-    charset = response.headers.getparam('charset')
-    if charset != None:
-      result.body = result.body.decode(charset)
+    try: # For python 2.x
+      charset = response.headers.getparam('charset')
+      if charset != None:
+        result.body = result.body.decode(charset)
+    except: # For python 3.x
+      charset = response.headers.get_content_charset()
+      if charset != None:
+        result.body = result.body.decode(charset)
 
     response.close()
 
+    '''
+    # will be handled in a different way to handle both python 2 and 3
+    # Is it not enough changing "b'\0'" to "b'\x00'"?
     if result.body.find(b'\0') > -1: # null bytes, if there's, the response is wrong.
       result.isSucceeded = False
       if show_error_msg:
         showResponseError()
+    '''
 
   return result
 
@@ -164,7 +199,11 @@ def createListItem(label, label2 = '', iconImage = None, thumbnailImage = None, 
 
 
 def formatUrl(parameters, domain = sys.argv[0]):
-  return '{0}?{1}'.format(domain, urllib.urlencode(encodeDict(parameters)))
+  try: # For python 2.x
+    return '{0}?{1}'.format(domain, urllib.urlencode(encodeDict(parameters)))
+  except: # For python 3.x
+    return '{0}?{1}'.format(domain, urllib.parse.urlencode(encodeDict(parameters)))
+
 
 
 def createNextPageItem(handle, pageNum, urlDictParams, fanart = None):
@@ -179,13 +218,17 @@ def createAudioVideoItems(handle, fanart = None):
 
 def encodeDict(oldDict):
   newDict = {}
-  for k, v in oldDict.iteritems():
-    if isinstance(v, unicode):
-      v = v.encode('utf8')
-    elif isinstance(v, str):
-      # Must be encoded in UTF-8
-      v.decode('utf8')
-    newDict[k] = v
+  try: # For python 2.x
+    for k, v in oldDict.iteritems():
+      if isinstance(v, unicode):
+        v = v.encode('utf8')
+      elif isinstance(v, str):
+        # Must be encoded in UTF-8
+        v.decode('utf8')
+      newDict[k] = v
+  except: # For python 3.x
+    for k, v in oldDict.items():
+      newDict[k] = v
   return newDict
 
 
